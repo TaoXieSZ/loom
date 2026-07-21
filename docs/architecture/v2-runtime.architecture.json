@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "agent-farm v2 (loom) — 目标运行时",
+    "subtitle": "own-the-loop：自有 agent loop + agent 状态单一归属",
+    "output": "v2-runtime.html"
+  },
+  "components": [
+    {
+      "id": "feishu",
+      "type": "external",
+      "label": "飞书 / 设备 / cron",
+      "sublabel": "事件源",
+      "pos": [40, 300],
+      "size": [130, 60]
+    },
+    {
+      "id": "dispatch",
+      "type": "backend",
+      "label": "dispatch",
+      "sublabel": "控制面 · Mac2",
+      "pos": [250, 300],
+      "size": [130, 60],
+      "tag": "外壳移植"
+    },
+    {
+      "id": "human",
+      "type": "security",
+      "label": "human principal",
+      "sublabel": "owner_open_id",
+      "pos": [250, 130],
+      "size": [130, 60],
+      "tag": "审批授权"
+    },
+    {
+      "id": "host",
+      "type": "backend",
+      "label": "loom-host",
+      "sublabel": "进程壳 · 每机一个",
+      "pos": [470, 300],
+      "size": [130, 60]
+    },
+    {
+      "id": "loop",
+      "type": "cloud",
+      "label": "loop ②-⑤",
+      "sublabel": "工具循环 / 上下文 / MCP",
+      "pos": [470, 430],
+      "size": [130, 64],
+      "tag": "自建核心"
+    },
+    {
+      "id": "complete",
+      "type": "messagebus",
+      "label": "complete() ①",
+      "sublabel": "窄接口 · 事件流",
+      "pos": [680, 430],
+      "size": [130, 64]
+    },
+    {
+      "id": "deepseek",
+      "type": "external",
+      "label": "DeepSeek",
+      "sublabel": "v4-flash · 1M ctx",
+      "pos": [880, 430],
+      "size": [120, 64]
+    },
+    {
+      "id": "home",
+      "type": "database",
+      "label": "agent home",
+      "sublabel": "agents/<id>/ 聚合根",
+      "pos": [680, 300],
+      "size": [130, 60],
+      "tag": "文件优先"
+    },
+    {
+      "id": "memory",
+      "type": "database",
+      "label": "memory/",
+      "sublabel": "core.md + facts + FTS",
+      "pos": [880, 300],
+      "size": [120, 60]
+    },
+    {
+      "id": "grants",
+      "type": "security",
+      "label": "grants",
+      "sublabel": "agent.json · 构造式",
+      "pos": [680, 130],
+      "size": [130, 60],
+      "tag": "不授权即不存在"
+    },
+    {
+      "id": "remote",
+      "type": "backend",
+      "label": "loom-host",
+      "sublabel": "remote-vm",
+      "pos": [470, 560],
+      "size": [130, 60]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Mac2 (always-on 控制面)",
+      "wraps": ["dispatch", "human"]
+    },
+    {
+      "kind": "security-group",
+      "label": "loom 运行时 · 自有 loop 与状态",
+      "wraps": ["host", "loop", "complete", "home", "memory", "grants"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "feishu",
+      "to": "dispatch",
+      "label": "事件接入",
+      "variant": "emphasis"
+    },
+    {
+      "from": "dispatch",
+      "to": "host",
+      "label": "自有协议 SSE",
+      "variant": "emphasis"
+    },
+    {
+      "from": "host",
+      "to": "loop",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "loop",
+      "to": "complete",
+      "label": "messages + tools",
+      "variant": "emphasis",
+      "labelAt": [640, 508]
+    },
+    {
+      "from": "complete",
+      "to": "deepseek",
+      "label": "openai-compat",
+      "variant": "emphasis"
+    },
+    {
+      "from": "human",
+      "to": "dispatch",
+      "label": "approval 卡",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 34
+    },
+    {
+      "from": "grants",
+      "to": "loop",
+      "label": "工具门控",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "labelDy": 70
+    },
+    {
+      "from": "host",
+      "to": "home",
+      "label": "落盘",
+      "variant": "default"
+    },
+    {
+      "from": "home",
+      "to": "memory",
+      "variant": "default"
+    },
+    {
+      "from": "loop",
+      "to": "home",
+      "label": "两级注入 / 检索",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "labelAt": [636, 400]
+    },
+    {
+      "from": "dispatch",
+      "to": "remote",
+      "label": "跨机路由",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "labelDy": 40
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "换心不拆楼",
+      "items": [
+        "dispatch 外壳移植：飞书层 / 审批流 / 事件接入",
+        "loop 与 agent 状态全部自建，不再租他人 loop",
+        "每机一个 loom-host，跨机与双面隔离照旧"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "状态单一归属",
+      "items": [
+        "agents/<id>/ 是聚合根：身份 / 记忆 / 会话 / 审计",
+        "memory 两级注入：core.md 常驻，facts 按需 FTS 检索",
+        "索引皆派生物，文件永远是唯一真相"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "构造式能力边界",
+      "items": [
+        "grants 住 agent.json：未授权工具不进工具列表",
+        "approval 是 loop 原语：执行前 await 人类裁决",
+        "rotation 与 per-run token 体系随自有 loop 蒸发"
+      ]
+    }
+  ]
+}
