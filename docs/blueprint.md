@@ -47,6 +47,10 @@ v2 买到的结构性简化：**rotation/memory_key 整体蒸发**（自有③=�
 
 - **M1 骨架**：新测试 agent（零工具）打穿全链路——飞书真实消息→dispatch(新 engine 类型)→
   loop-host→DeepSeek→SSE 流式回飞书卡。验收：流式卡片真机可见。
+  - _进度（2026-07-21）_：① `complete()` 与 ② `loop` 组件已建成并真机验证（PR #1 #2，30 测试绿）；
+    DeepSeek 全链路打通。**剩 host 进程壳**——它把这套通过 HTTP/SSE 暴露给 dispatch，
+    是"能跑脚本"变成"飞书消息真机可见"的最后一步。组件进度见
+    `docs/architecture/v2-progress.svg`。
 - **M2 状态**：agent home 落盘、sessions.jsonl、两级记忆+memory_search+蒸馏 cron。
   验收：重启后记忆/会话连续，检索命中真实历史。
 - **M3 边界**：工具注册表、grants 构造式门控、approval 原语（飞书卡）、shell 工具、MCP 客户端。

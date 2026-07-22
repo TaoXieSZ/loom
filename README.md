@@ -16,12 +16,29 @@
 `docs/architecture/v2-runtime.html`。改架构 → 改 `v2-runtime.architecture.json` →
 重渲染 → `node docs/architecture/export-svg.mjs docs/architecture/v2-runtime.html`。
 
+## 当前进度
+
+> 组件视角（不是 M1-M6 里程碑——里程碑要等 host 打通飞书链路才算达成）。
+
+![loom 组件进度](docs/architecture/v2-progress.svg)
+
+| 组件 | 状态 |
+|---|---|
+| **① `complete()`** wire 契约 + SSE 解析 + transport | ✅ 已建成，真机验证（[PR #1](https://github.com/TaoXieSZ/loom/pull/1)） |
+| **② `loop`** agent 循环 + 构造式边界 + 审批原语 | ✅ 已建成，真机验证（[PR #2](https://github.com/TaoXieSZ/loom/pull/2)） |
+| grants 构造式门控 | ◐ 逻辑已在 ② 实现；飞书审批卡渲染待接（M3） |
+| **host** 进程壳（HTTP/SSE 暴露给 dispatch） | ⬜ M1 收尾 |
+| agent home + 两级记忆落盘 | ⬜ M2 |
+| dispatch 外壳移植 + 绞杀迁移 | ⬜ M4–M5 |
+
+DeepSeek v4-flash 全链路已打通，30 测试绿（14 protocol + 16 loop）。
+
 ## 布局
 
 ```
-packages/protocol   类型契约，dispatch↔loom-host 协议的唯一真相
-packages/loop       agent loop 纯逻辑（工具循环/上下文/MCP/session），可单测
-packages/host       进程壳（HTTP/SSE 服务、agent home 落盘、pm2 托管）
+packages/protocol   ✅ 类型契约 + SSE 解析 + transport（dispatch↔loom-host 协议唯一真相）
+packages/loop       ✅ agent loop（工具循环 / 构造式能力边界 / 审批原语），纯逻辑可单测
+packages/host       ⬜ 进程壳（HTTP/SSE 服务、agent home 落盘、pm2 托管）— 未实现
 ```
 
 ## 命令

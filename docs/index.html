@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>loom — 进度与文档</title>
+<style>
+  :root {
+    /* 暖中性偏 clay,非廉价 cream —— Anthropic oat/ivory */
+    --bg:        #faf9f5;
+    --surface:   #f3f1ea;
+    --ink:       #1a1915;
+    --muted:     #6b6558;
+    --faint:     #9a9384;
+    --line:      #e2dfd4;
+    --line-firm: #d0ccbe;
+    /* 唯一发力的强调 —— Anthropic clay */
+    --accent:    #cc785c;
+    --accent-ink:#a8502f;
+    /* 语义色,独立于 accent */
+    --done:      #5b8a5b;
+    --partial:   #c2903f;
+    --todo:      #9a9384;
+    --shadow: 0 1px 0 var(--line-firm);
+
+    --serif: ui-serif, Georgia, "Songti SC", "Noto Serif SC", "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+            "Hiragino Sans GB", "Microsoft YaHei", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas,
+            "Noto Sans Mono CJK SC", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:        #1f1e1b;
+      --surface:   #292722;
+      --ink:       #f0eee6;
+      --muted:     #a8a090;
+      --faint:     #756f62;
+      --line:      #34322c;
+      --line-firm: #423f37;
+      --accent:    #e0997c;
+      --accent-ink:#eab59f;
+      --done:      #7fa87f;
+      --partial:   #d4ab63;
+      --todo:      #756f62;
+      --shadow: 0 1px 0 var(--line-firm);
+    }
+  }
+  /* 手动切换必须双向覆盖 media query */
+  :root[data-theme="light"] {
+    --bg:#faf9f5; --surface:#f3f1ea; --ink:#1a1915; --muted:#6b6558; --faint:#9a9384;
+    --line:#e2dfd4; --line-firm:#d0ccbe; --accent:#cc785c; --accent-ink:#a8502f;
+    --done:#5b8a5b; --partial:#c2903f; --todo:#9a9384;
+  }
+  :root[data-theme="dark"] {
+    --bg:#1f1e1b; --surface:#292722; --ink:#f0eee6; --muted:#a8a090; --faint:#756f62;
+    --line:#34322c; --line-firm:#423f37; --accent:#e0997c; --accent-ink:#eab59f;
+    --done:#7fa87f; --partial:#d4ab63; --todo:#756f62;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 28px; }
+
+  /* ── header ── */
+  header {
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+  }
+  .bar { display: flex; align-items: baseline; gap: 16px; padding: 16px 0; }
+  .mark { font-family: var(--mono); font-weight: 600; font-size: 15px; letter-spacing: .04em; }
+  .mark b { color: var(--accent-ink); font-weight: 600; }
+  .bar nav { margin-left: auto; display: flex; gap: 20px; align-items: center; }
+  .bar a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+  .bar a:hover { color: var(--ink); }
+  .toggle {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    background: transparent; border: 1px solid var(--line-firm); border-radius: 2px;
+    padding: 4px 9px; cursor: pointer;
+  }
+  .toggle:hover { border-color: var(--accent); color: var(--accent-ink); }
+  .toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── hero ── */
+  .hero { padding: 72px 0 40px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent-ink); margin: 0 0 20px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 500;
+    font-size: clamp(38px, 6vw, 60px); line-height: 1.08;
+    letter-spacing: -.01em; margin: 0 0 22px; text-wrap: balance;
+  }
+  .thesis {
+    font-size: 19px; line-height: 1.6; color: var(--ink);
+    max-width: 30em; margin: 0 0 32px;
+  }
+  .thesis em { font-family: var(--serif); font-style: italic; color: var(--accent-ink); }
+
+  /* metric row */
+  .metrics { display: flex; flex-wrap: wrap; gap: 0; border-top: 1px solid var(--line);
+             border-bottom: 1px solid var(--line); }
+  .metric { flex: 1 1 0; min-width: 120px; padding: 18px 20px 16px;
+            border-right: 1px solid var(--line); }
+  .metric:last-child { border-right: 0; }
+  .metric .n { font-family: var(--mono); font-size: 26px; font-weight: 600;
+               color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1; }
+  .metric .n .accent { color: var(--accent-ink); }
+  .metric .k { font-size: 12.5px; color: var(--muted); margin-top: 7px; }
+
+  section { padding: 52px 0; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin: 0 0 28px; }
+  .sec-num { font-family: var(--mono); font-size: 12px; color: var(--faint); letter-spacing: .1em; }
+  h2 { font-family: var(--serif); font-weight: 500; font-size: 27px; margin: 0;
+       letter-spacing: -.005em; }
+  .sec-note { color: var(--muted); font-size: 14px; margin: -16px 0 28px; max-width: 46em; }
+
+  /* ── progress diagram + components ── */
+  .figure {
+    border: 1px solid var(--line); border-radius: 3px; background: var(--surface);
+    padding: 16px; overflow-x: auto;
+  }
+  .figure img { display: block; width: 100%; height: auto; min-width: 560px; }
+  .figcap { font-size: 12.5px; color: var(--muted); margin: 12px 2px 0; display: flex;
+            justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .figcap a { color: var(--accent-ink); text-decoration: none; }
+  .figcap a:hover { text-decoration: underline; }
+
+  .components { list-style: none; margin: 28px 0 0; padding: 0; }
+  .components li { display: grid; grid-template-columns: 96px 1fr auto;
+                   gap: 16px; align-items: baseline;
+                   padding: 13px 0; border-bottom: 1px solid var(--line); }
+  .components li:first-child { border-top: 1px solid var(--line); }
+  .comp-id { font-family: var(--mono); font-size: 13px; color: var(--ink); font-weight: 600; }
+  .comp-desc { color: var(--muted); font-size: 14px; }
+  .comp-desc b { color: var(--ink); font-weight: 600; }
+  .status { font-family: var(--mono); font-size: 11.5px; letter-spacing: .03em;
+            white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; }
+  .st-done { color: var(--done); } .st-done::before { background: var(--done); }
+  .st-part { color: var(--partial); } .st-part::before {
+     background: transparent; box-shadow: inset 0 0 0 1.5px var(--partial); }
+  .st-todo { color: var(--todo); } .st-todo::before {
+     background: transparent; box-shadow: inset 0 0 0 1.5px var(--todo); }
+
+  /* ── timeline: the loom's warp ── */
+  .timeline { position: relative; margin: 8px 0 0; padding-left: 34px; }
+  .timeline::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px;
+    width: 1.5px; background: linear-gradient(var(--accent), var(--line-firm)); }
+  .node { position: relative; padding: 0 0 30px; }
+  .node::before { content: ""; position: absolute; left: -34px; top: 4px;
+    width: 15px; height: 15px; border-radius: 50%; background: var(--bg);
+    border: 1.5px solid var(--accent); }
+  .node.faded::before { border-color: var(--line-firm); }
+  .node.faded .card { opacity: .82; }
+  .card {
+    border: 1px solid var(--line); border-radius: 3px; background: var(--surface);
+    padding: 16px 18px; transition: border-color .15s;
+  }
+  a.card { display: block; text-decoration: none; color: inherit; }
+  a.card:hover { border-color: var(--accent); }
+  a.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .kind { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--accent-ink);
+    border: 1px solid var(--line-firm); border-radius: 2px; padding: 2px 6px; }
+  .card-top h3 { font-family: var(--serif); font-weight: 500; font-size: 18px; margin: 0; }
+  .card-top .when { margin-left: auto; font-family: var(--mono); font-size: 11.5px;
+    color: var(--faint); }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+  .card .arrow { color: var(--accent-ink); }
+
+  /* ── footer ── */
+  footer { border-top: 1px solid var(--line); padding: 40px 0 60px; }
+  footer .run { font-family: var(--mono); font-size: 13px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 3px; padding: 14px 16px; color: var(--ink);
+    overflow-x: auto; }
+  footer .run .c { color: var(--faint); }
+  footer p { color: var(--muted); font-size: 13.5px; }
+  footer a { color: var(--accent-ink); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    .components li { grid-template-columns: 1fr auto; }
+    .comp-desc { grid-column: 1 / -1; }
+    .card-top .when { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <span class="mark"><b>loom</b> · agent-farm v2</span>
+    <nav>
+      <a href="https://github.com/TaoXieSZ/loom" target="_blank" rel="noopener">仓库</a>
+      <button class="toggle" id="themeBtn" aria-label="切换主题">主题</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="hero">
+    <p class="eyebrow">own-the-loop · 进度与文档</p>
+    <h1>把 loop 织起来的机器</h1>
+    <p class="thesis">
+      loom 是 agent-farm 的 v2 重建：自己写 agent 循环，而不是租一个 SDK 的。
+      <em>换心不拆楼</em>——核心逐层自建、真机验证，每一步都先讲原理再写代码。
+      这是一个教学项目，下面是它长出来的过程。
+    </p>
+    <div class="metrics">
+      <div class="metric"><div class="n">2<span class="accent">/6</span></div>
+        <div class="k">核心组件已建成</div></div>
+      <div class="metric"><div class="n">30</div>
+        <div class="k">测试全绿 · 14+16</div></div>
+      <div class="metric"><div class="n">2</div>
+        <div class="k">层真机验证</div></div>
+      <div class="metric"><div class="n">v4</div>
+        <div class="k">DeepSeek flash 打通</div></div>
+    </div>
+  </div>
+
+  <section id="progress">
+    <div class="sec-head"><span class="sec-num">01</span><h2>当前进度</h2></div>
+    <p class="sec-note">
+      按组件、不按里程碑——M1 里程碑要等 host 打通飞书链路才算达成。
+      绿框内是已建成并真机验证的部分。
+    </p>
+    <figure class="figure">
+      <img src="architecture/v2-progress.svg" alt="loom 组件进度架构图">
+      <figcaption class="figcap">
+        <span>实线＝已通的路径，虚线＝未接的路径</span>
+        <a href="architecture/v2-progress.html" target="_blank" rel="noopener">
+          打开交互版（主题切换 · 4× 导出）→</a>
+      </figcaption>
+    </figure>
+
+    <ul class="components">
+      <li><span class="comp-id">① complete()</span>
+        <span class="comp-desc"><b>wire 契约 + SSE 解析 + transport</b>，一次请求不重试</span>
+        <span class="status st-done">已建成 · 真机</span></li>
+      <li><span class="comp-id">② loop</span>
+        <span class="comp-desc"><b>agent 循环 + 构造式边界 + 审批原语</b>，纯逻辑可测</span>
+        <span class="status st-done">已建成 · 真机</span></li>
+      <li><span class="comp-id">grants</span>
+        <span class="comp-desc">构造式门控逻辑已在 ② 实现；飞书审批卡渲染待接</span>
+        <span class="status st-part">部分 · M3</span></li>
+      <li><span class="comp-id">host</span>
+        <span class="comp-desc">进程壳：把这套通过 HTTP/SSE 暴露给 dispatch</span>
+        <span class="status st-todo">待建 · M1 收尾</span></li>
+      <li><span class="comp-id">agent home</span>
+        <span class="comp-desc">文件优先聚合根 + 两级记忆（core.md + FTS）落盘</span>
+        <span class="status st-todo">待建 · M2</span></li>
+      <li><span class="comp-id">dispatch</span>
+        <span class="comp-desc">外壳移植（飞书层 / 审批流）+ 绞杀迁移</span>
+        <span class="status st-todo">待建 · M4–M5</span></li>
+    </ul>
+  </section>
+
+  <section id="docs">
+    <div class="sec-head"><span class="sec-num">02</span><h2>过程与文档</h2></div>
+    <p class="sec-note">
+      沿时间轴排列——这条轴就是 loom 的经线，每份文档是织上去的一道纬。从奠基到当前进度。
+    </p>
+
+    <div class="timeline">
+      <div class="node">
+        <a class="card" href="blueprint.md">
+          <div class="card-top"><span class="kind">宪章</span><h3>v2 重建蓝图</h3>
+            <span class="when">07-17</span></div>
+          <p>8 项架构决策（换心不拆楼 / loop 五层自建 / 文件优先聚合根 / 构造式能力…）
+             + M1–M6 里程碑梯子。整个项目的地基。<span class="arrow"> →</span></p>
+        </a>
+      </div>
+
+      <div class="node">
+        <a class="card" href="lessons/01-wire-protocol.md">
+          <div class="card-top"><span class="kind">第一课</span><h3>openai-compat 线协议</h3>
+            <span class="when">07-19</span></div>
+          <p>① 层到底在处理什么：SSE 帧解剖、tool_call 增量拼装、两个传输层暗坑
+             （多字节被切、chunk≠帧），以及真机采集当天学到的东西（§7）。<span class="arrow"> →</span></p>
+        </a>
+      </div>
+
+      <div class="node">
+        <a class="card" href="architecture/v2-runtime.html" target="_blank" rel="noopener">
+          <div class="card-top"><span class="kind">架构图</span><h3>目标运行时</h3>
+            <span class="when">07-20</span></div>
+          <p>own-the-loop 全景：飞书 → dispatch → loom-host → loop → DeepSeek，
+             以及 agent home 状态单一归属。交互版，可切主题。<span class="arrow"> →</span></p>
+        </a>
+      </div>
+
+      <div class="node">
+        <a class="card" href="https://github.com/TaoXieSZ/loom/pull/1" target="_blank" rel="noopener">
+          <div class="card-top"><span class="kind">PR #1</span><h3>层① protocol</h3>
+            <span class="when">07-21</span></div>
+          <p>wire 契约 + 两级增量 SSE 解析器 + transport。14 测试，4 个回放真机
+             DeepSeek 字节流。first-token 2.6s &lt; 3.2s 证明真流式。<span class="arrow"> →</span></p>
+        </a>
+      </div>
+
+      <div class="node">
+        <a class="card" href="https://github.com/TaoXieSZ/loom/pull/2" target="_blank" rel="noopener">
+          <div class="card-top"><span class="kind">PR #2</span><h3>层② loop</h3>
+            <span class="when">07-21</span></div>
+          <p>agent 循环 + 构造式能力边界 + 审批原语（注入回调 + 超时 + 指纹绑定 + 分级）。
+             16 测试。真机：同一危险请求两跑，模型一次自拒一次发起，闸都拦住。<span class="arrow"> →</span></p>
+        </a>
+      </div>
+
+      <div class="node faded">
+        <div class="card">
+          <div class="card-top"><span class="kind">进度图</span><h3>当前完成度</h3>
+            <span class="when">此页</span></div>
+          <p>本页顶部那张图——组件视角，绿框＝已建成。下一份文档会是
+             host 打通飞书链路的 M1 收尾记录。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p style="font-family:var(--serif);font-size:17px;color:var(--ink);margin:0 0 18px;">
+      本地把它跑起来</p>
+    <div class="run"><span class="c"># 30 测试全绿：</span> npm run check
+      &nbsp;&nbsp;<span class="c"># 真机冒烟（key 走 stdin）：</span> … | node scripts/smoke-loop.mjs</div>
+    <p style="margin-top:22px;">
+      仓库 <a href="https://github.com/TaoXieSZ/loom" target="_blank" rel="noopener">TaoXieSZ/loom</a>
+      · 宪章 <a href="blueprint.md">docs/blueprint.md</a>
+      · 教学项目，关键概念先讲后写。
+    </p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement, key = "loom-theme";
+    var saved = null; try { saved = localStorage.getItem(key); } catch (e) {}
+    if (saved) root.setAttribute("data-theme", saved);
+    document.getElementById("themeBtn").addEventListener("click", function () {
+      var cur = root.getAttribute("data-theme");
+      if (!cur) cur = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      var next = cur === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem(key, next); } catch (e) {}
+    });
+  })();
+</script>
+</body>
+</html>

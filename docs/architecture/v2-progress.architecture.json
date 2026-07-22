@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "agent-farm v2 (loom) — 组件进度",
+    "subtitle": "① complete 与 ② loop 已建成并真机验证；host / 状态层 / dispatch 移植待做",
+    "output": "v2-progress.html"
+  },
+  "components": [
+    {
+      "id": "feishu",
+      "type": "external",
+      "label": "飞书 / 设备 / cron",
+      "sublabel": "事件源",
+      "pos": [40, 300],
+      "size": [130, 60]
+    },
+    {
+      "id": "dispatch",
+      "type": "backend",
+      "label": "dispatch",
+      "sublabel": "控制面 · Mac2",
+      "pos": [250, 300],
+      "size": [130, 60],
+      "tag": "待移植"
+    },
+    {
+      "id": "human",
+      "type": "security",
+      "label": "human principal",
+      "sublabel": "owner_open_id",
+      "pos": [250, 130],
+      "size": [130, 60],
+      "tag": "契约已定"
+    },
+    {
+      "id": "host",
+      "type": "backend",
+      "label": "loom-host",
+      "sublabel": "进程壳 · 每机一个",
+      "pos": [470, 300],
+      "size": [130, 60],
+      "tag": "M1 收尾"
+    },
+    {
+      "id": "loop",
+      "type": "cloud",
+      "label": "loop ②",
+      "sublabel": "工具循环 · 构造式边界 · 审批",
+      "pos": [470, 430],
+      "size": [130, 64],
+      "tag": "已验证"
+    },
+    {
+      "id": "complete",
+      "type": "messagebus",
+      "label": "complete() ①",
+      "sublabel": "窄接口 · 事件流",
+      "pos": [680, 430],
+      "size": [130, 64],
+      "tag": "已验证"
+    },
+    {
+      "id": "deepseek",
+      "type": "external",
+      "label": "DeepSeek",
+      "sublabel": "v4-flash · 1M ctx",
+      "pos": [880, 430],
+      "size": [120, 64],
+      "tag": "已打通"
+    },
+    {
+      "id": "home",
+      "type": "database",
+      "label": "agent home",
+      "sublabel": "agents/<id>/ 聚合根",
+      "pos": [680, 300],
+      "size": [130, 60],
+      "tag": "M2"
+    },
+    {
+      "id": "memory",
+      "type": "database",
+      "label": "memory/",
+      "sublabel": "core.md + facts + FTS",
+      "pos": [880, 300],
+      "size": [120, 60],
+      "tag": "M2"
+    },
+    {
+      "id": "grants",
+      "type": "security",
+      "label": "grants",
+      "sublabel": "agent.json · 构造式",
+      "pos": [680, 130],
+      "size": [130, 60],
+      "tag": "逻辑已建"
+    },
+    {
+      "id": "remote",
+      "type": "backend",
+      "label": "loom-host",
+      "sublabel": "remote-vm",
+      "pos": [470, 560],
+      "size": [130, 60],
+      "tag": "M6"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Mac2 控制面 · 外壳待移植",
+      "wraps": ["dispatch", "human"]
+    },
+    {
+      "kind": "region",
+      "label": "待建 · host 收尾 (M1) → 状态层 (M2)",
+      "wraps": ["host", "home", "memory"]
+    },
+    {
+      "kind": "security-group",
+      "label": "已建成并真机验证 · PR #1 #2 · 30 测试绿",
+      "wraps": ["loop", "complete"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "feishu",
+      "to": "dispatch",
+      "label": "事件接入",
+      "variant": "dashed"
+    },
+    {
+      "from": "dispatch",
+      "to": "host",
+      "label": "自有协议 SSE",
+      "variant": "dashed"
+    },
+    {
+      "from": "host",
+      "to": "loop",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "loop",
+      "to": "complete",
+      "label": "messages + tools",
+      "variant": "emphasis",
+      "labelAt": [640, 508]
+    },
+    {
+      "from": "complete",
+      "to": "deepseek",
+      "label": "openai-compat",
+      "variant": "emphasis"
+    },
+    {
+      "from": "human",
+      "to": "dispatch",
+      "label": "approval 卡",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 34
+    },
+    {
+      "from": "grants",
+      "to": "loop",
+      "label": "工具门控",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "right",
+      "labelDy": 70
+    },
+    {
+      "from": "host",
+      "to": "home",
+      "label": "落盘",
+      "variant": "dashed"
+    },
+    {
+      "from": "home",
+      "to": "memory",
+      "variant": "dashed"
+    },
+    {
+      "from": "loop",
+      "to": "home",
+      "label": "两级注入 / 检索",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "bottom",
+      "labelAt": [636, 400]
+    },
+    {
+      "from": "dispatch",
+      "to": "remote",
+      "label": "跨机路由",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "labelDy": 40
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "已建成（PR #1 #2，真机验证）",
+      "items": [
+        "① complete()：wire 契约 + SSE 解析 + transport",
+        "② loop：agent 循环 + 构造式边界 + 审批原语",
+        "DeepSeek v4-flash 全链路打通，30 测试绿"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "部分完成",
+      "items": [
+        "grants 构造式门控已在 ② 实现（未授权工具对模型不存在）",
+        "approval 原语已实现，飞书审批卡渲染待接（M3）"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "待建",
+      "items": [
+        "host 进程壳：HTTP/SSE 暴露给 dispatch（M1 收尾）",
+        "agent home + 两级记忆落盘（M2）",
+        "dispatch 外壳移植 + 绞杀迁移（M4–M5）"
+      ]
+    }
+  ]
+}
