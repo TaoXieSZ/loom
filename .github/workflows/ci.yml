@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      # build all packages + run every package's node:test suite.
+      # This is the power-on gate: a red check here means the merge would
+      # break the build or a test — caught before landing, not after.
+      - run: npm run check
