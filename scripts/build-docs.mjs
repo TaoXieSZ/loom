@@ -24,12 +24,16 @@ const PAGES = [
 
 /** 门户同款 Anthropic 配色 + markdown 排版。 */
 function shell(title, home, bodyHtml) {
+  const fav = home.replace(/index\.html$/, ""); // "" 或 "../" —— 适配 lessons 子目录
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${title} · loom</title>
+<link rel="icon" href="${fav}favicon.svg" type="image/svg+xml">
+<link rel="icon" href="${fav}favicon-32.png" sizes="32x32" type="image/png">
+<meta name="theme-color" content="#cc785c">
 <style>
   :root{
     --bg:#faf9f5;--surface:#f3f1ea;--ink:#1a1915;--muted:#6b6558;--faint:#9a9384;

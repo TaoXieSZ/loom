@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="loom">
+  <!-- clay 圆角底(Anthropic accent) -->
+  <rect width="32" height="32" rx="7" fill="#cc785c"/>
+  <g stroke="#faf9f5" stroke-width="3.2" stroke-linecap="round" fill="none">
+    <!-- 外侧两经柱:纬线从其【前】拱起越过 → 先画 -->
+    <line x1="9"  y1="7.5" x2="9"  y2="24.5"/>
+    <line x1="23" y1="7.5" x2="23" y2="24.5"/>
+    <!-- 纬线:一道波 —— 外柱处拱起(越过)、中柱处下沉(穿入) -->
+    <path d="M5.5 16 Q9 11 12.5 16 Q16 21 19.5 16 Q23 11 26.5 16"/>
+    <!-- 中间经柱:纬线从其【后】穿过 → 最后画,压住纬线,呈"穿入" -->
+    <line x1="16" y1="7.5" x2="16" y2="24.5"/>
+  </g>
+</svg>
