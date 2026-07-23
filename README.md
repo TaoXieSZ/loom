@@ -24,14 +24,18 @@
 
 | 组件 | 状态 |
 |---|---|
-| **① `complete()`** wire 契约 + SSE 解析 + transport | ✅ 已建成，真机验证（[PR #1](https://github.com/TaoXieSZ/loom/pull/1)） |
-| **② `loop`** agent 循环 + 构造式边界 + 审批原语 | ✅ 已建成，真机验证（[PR #2](https://github.com/TaoXieSZ/loom/pull/2)） |
-| grants 构造式门控 | ◐ 逻辑已在 ② 实现；飞书审批卡渲染待接（M3） |
-| **host** 进程壳（HTTP/SSE 暴露给 dispatch） | ⬜ M1 收尾 |
-| agent home + 两级记忆落盘 | ⬜ M2 |
-| dispatch 外壳移植 + 绞杀迁移 | ⬜ M4–M5 |
+<!-- SYNC:PROGRESS:START -->
+| **① complete()** wire 契约 + SSE 解析 + transport | ✅ 已建成，真机验证（[PR #1](https://github.com/TaoXieSZ/loom/pull/1)） |
+| **② loop** agent 循环 + 构造式边界 + 审批原语 | ✅ 已建成，真机验证（[PR #2](https://github.com/TaoXieSZ/loom/pull/2)） |
+| **host** 进程壳:HTTP/SSE | ✅ 已建成，真机验证 |
+| **grants** 构造式门控逻辑已在 ② 实现；飞书审批卡渲染待接 | ◐ 逻辑已在 ② 实现；飞书审批卡待接（M3） |
+| **agent home** 文件优先聚合根 + 两级记忆（core.md + FTS）落盘 | ⬜ 待建 · M2 |
+| **dispatch** 外壳移植（飞书层 / 审批流）+ 绞杀迁移 | ⬜ 待建 · M4–M5 |
 
-DeepSeek v4-flash 全链路已打通，30 测试绿（14 protocol + 16 loop）。
+DeepSeek v4-flash 全链路已打通，**38 测试绿**（14 protocol + 16 loop + 8 host）。
+<!-- SYNC:PROGRESS:END -->
+
+> 进度由 `scripts/sync-portal.mjs` 从测试与实现事实自动同步，非手工维护。
 
 ## 布局
 

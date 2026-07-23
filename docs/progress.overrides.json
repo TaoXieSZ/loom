@@ -1,0 +1,49 @@
+{
+  "_comment": "门户进度的【语义层】——人工维护。状态(done/todo)与测试数由 scripts/sync-portal.mjs 从事实自动算并覆盖;这里只定'有哪些组件、是什么、目标里程碑、PR、以及机械判不了的灰色状态(partial)'。改了重跑 sync-portal 即可。",
+  "components": [
+    {
+      "id": "① complete()",
+      "descBold": "wire 契约 + SSE 解析 + transport",
+      "descRest": "，一次请求不重试",
+      "pkg": "protocol",
+      "verified": true,
+      "pr": 1
+    },
+    {
+      "id": "② loop",
+      "descBold": "agent 循环 + 构造式边界 + 审批原语",
+      "descRest": "，纯逻辑可测",
+      "pkg": "loop",
+      "verified": true,
+      "pr": 2
+    },
+    {
+      "id": "host",
+      "descBold": "进程壳:HTTP/SSE",
+      "descRest": " 暴露给 dispatch，无状态",
+      "pkg": "host",
+      "verified": true
+    },
+    {
+      "id": "grants",
+      "descBold": "",
+      "descRest": "构造式门控逻辑已在 ② 实现；飞书审批卡渲染待接",
+      "status": "partial",
+      "note": "M3"
+    },
+    {
+      "id": "agent home",
+      "descBold": "",
+      "descRest": "文件优先聚合根 + 两级记忆（core.md + FTS）落盘",
+      "status": "todo",
+      "note": "M2"
+    },
+    {
+      "id": "dispatch",
+      "descBold": "",
+      "descRest": "外壳移植（飞书层 / 审批流）+ 绞杀迁移",
+      "status": "todo",
+      "note": "M4–M5"
+    }
+  ]
+}

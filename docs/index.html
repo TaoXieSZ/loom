@@ -220,14 +220,16 @@
       这是一个教学项目，下面是它长出来的过程。
     </p>
     <div class="metrics">
-      <div class="metric"><div class="n">2<span class="accent">/6</span></div>
+      <!-- SYNC:METRICS:START -->
+      <div class="metric"><div class="n">3<span class="accent">/3</span></div>
         <div class="k">核心组件已建成</div></div>
-      <div class="metric"><div class="n">30</div>
-        <div class="k">测试全绿 · 14+16</div></div>
-      <div class="metric"><div class="n">2</div>
-        <div class="k">层真机验证</div></div>
+      <div class="metric"><div class="n">38</div>
+        <div class="k">测试全绿 · 14+16+8</div></div>
+      <div class="metric"><div class="n">3</div>
+        <div class="k">组件真机验证</div></div>
       <div class="metric"><div class="n">v4</div>
         <div class="k">DeepSeek flash 打通</div></div>
+<!-- SYNC:METRICS:END -->
     </div>
   </div>
 
@@ -247,24 +249,26 @@
     </figure>
 
     <ul class="components">
+      <!-- SYNC:COMPONENTS:START -->
       <li><span class="comp-id">① complete()</span>
         <span class="comp-desc"><b>wire 契约 + SSE 解析 + transport</b>，一次请求不重试</span>
         <span class="status st-done">已建成 · 真机</span></li>
       <li><span class="comp-id">② loop</span>
         <span class="comp-desc"><b>agent 循环 + 构造式边界 + 审批原语</b>，纯逻辑可测</span>
         <span class="status st-done">已建成 · 真机</span></li>
+      <li><span class="comp-id">host</span>
+        <span class="comp-desc"><b>进程壳:HTTP/SSE</b> 暴露给 dispatch，无状态</span>
+        <span class="status st-done">已建成 · 真机</span></li>
       <li><span class="comp-id">grants</span>
         <span class="comp-desc">构造式门控逻辑已在 ② 实现；飞书审批卡渲染待接</span>
         <span class="status st-part">部分 · M3</span></li>
-      <li><span class="comp-id">host</span>
-        <span class="comp-desc">进程壳：把这套通过 HTTP/SSE 暴露给 dispatch</span>
-        <span class="status st-todo">待建 · M1 收尾</span></li>
       <li><span class="comp-id">agent home</span>
         <span class="comp-desc">文件优先聚合根 + 两级记忆（core.md + FTS）落盘</span>
         <span class="status st-todo">待建 · M2</span></li>
       <li><span class="comp-id">dispatch</span>
         <span class="comp-desc">外壳移植（飞书层 / 审批流）+ 绞杀迁移</span>
         <span class="status st-todo">待建 · M4–M5</span></li>
+<!-- SYNC:COMPONENTS:END -->
     </ul>
   </section>
 
