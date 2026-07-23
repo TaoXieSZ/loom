@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第一课 — openai-compat 线协议 · loom</title>
+<style>
+  :root{
+    --bg:#faf9f5;--surface:#f3f1ea;--ink:#1a1915;--muted:#6b6558;--faint:#9a9384;
+    --line:#e2dfd4;--line-firm:#d0ccbe;--accent:#cc785c;--accent-ink:#a8502f;
+    --serif:ui-serif,Georgia,"Songti SC","Noto Serif SC",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,"Noto Sans Mono CJK SC",monospace;
+  }
+  @media(prefers-color-scheme:dark){:root{
+    --bg:#1f1e1b;--surface:#292722;--ink:#f0eee6;--muted:#a8a090;--faint:#756f62;
+    --line:#34322c;--line-firm:#423f37;--accent:#e0997c;--accent-ink:#eab59f;}}
+  :root[data-theme="light"]{--bg:#faf9f5;--surface:#f3f1ea;--ink:#1a1915;--muted:#6b6558;--faint:#9a9384;--line:#e2dfd4;--line-firm:#d0ccbe;--accent:#cc785c;--accent-ink:#a8502f;}
+  :root[data-theme="dark"]{--bg:#1f1e1b;--surface:#292722;--ink:#f0eee6;--muted:#a8a090;--faint:#756f62;--line:#34322c;--line-firm:#423f37;--accent:#e0997c;--accent-ink:#eab59f;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:0 28px}
+  header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;
+    background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px)}
+  .bar{display:flex;align-items:center;gap:14px;padding:14px 0}
+  .bar a.back{color:var(--muted);text-decoration:none;font-size:13.5px;font-family:var(--mono)}
+  .bar a.back:hover{color:var(--accent-ink)}
+  .bar .sp{margin-left:auto}
+  .toggle{font-family:var(--mono);font-size:12px;color:var(--muted);background:transparent;
+    border:1px solid var(--line-firm);border-radius:2px;padding:4px 9px;cursor:pointer}
+  .toggle:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  main{padding:48px 0 80px}
+  .prose h1{font-family:var(--serif);font-weight:500;font-size:clamp(30px,5vw,42px);
+    line-height:1.15;letter-spacing:-.01em;margin:0 0 28px;text-wrap:balance}
+  .prose h2{font-family:var(--serif);font-weight:500;font-size:25px;margin:44px 0 16px;
+    padding-top:20px;border-top:1px solid var(--line);letter-spacing:-.005em}
+  .prose h3{font-family:var(--serif);font-weight:600;font-size:19px;margin:32px 0 12px}
+  .prose p{margin:0 0 18px}
+  .prose ul,.prose ol{margin:0 0 18px;padding-left:24px}
+  .prose li{margin:6px 0}
+  .prose a{color:var(--accent-ink);text-decoration:none;border-bottom:1px solid var(--line-firm)}
+  .prose a:hover{border-color:var(--accent)}
+  .prose strong{font-weight:600;color:var(--ink)}
+  .prose em{font-family:var(--serif);font-style:italic}
+  .prose code{font-family:var(--mono);font-size:.88em;background:var(--surface);
+    border:1px solid var(--line);border-radius:3px;padding:1px 5px}
+  .prose pre{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+    padding:16px 18px;overflow-x:auto;margin:0 0 20px;line-height:1.55}
+  .prose pre code{background:none;border:0;padding:0;font-size:13px}
+  .prose blockquote{margin:0 0 20px;padding:2px 18px;border-left:3px solid var(--accent);
+    color:var(--muted);background:var(--surface)}
+  .prose blockquote p{margin:12px 0}
+  .prose table{border-collapse:collapse;width:100%;margin:0 0 22px;font-size:14px;display:block;overflow-x:auto}
+  .prose th,.prose td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+  .prose th{background:var(--surface);font-weight:600;font-family:var(--mono);font-size:12.5px}
+  .prose hr{border:0;border-top:1px solid var(--line);margin:32px 0}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap bar">
+  <a class="back" href="../index.html">← 门户</a>
+  <span class="sp"></span>
+  <button class="toggle" id="t" aria-label="切换主题">主题</button>
+</div></header>
+<main class="wrap"><article class="prose">
+<h1>第一课：openai-compat 线协议 —— ① 层到底在处理什么</h1>
+<blockquote>
+<p>loom 教学系列。读完这课，你能看懂 DeepSeek 流式回复的每一个字节，
+并理解为什么 ① 层的接口要设计成&quot;语义事件流&quot;。写代码之前先过这一课。</p>
+</blockquote>
+<h2>1. 请求：一个 POST 就是全部</h2>
+<pre><code class="language-jsonc">POST https://api.deepseek.com/v1/chat/completions
+Authorization: Bearer sk-...
+{
+  &quot;model&quot;: &quot;deepseek-chat&quot;,            // v4-flash 用 &quot;deepseek-chat&quot;? 不——用真实 id,M1 时以 /models 为准
+  &quot;messages&quot;: [
+    { &quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;你是...&quot; },
+    { &quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;帮我查下天气&quot; },
+    // 工具往返的历史长这样：
+    { &quot;role&quot;: &quot;assistant&quot;, &quot;tool_calls&quot;: [ { &quot;id&quot;: &quot;call_1&quot;, &quot;type&quot;: &quot;function&quot;,
+        &quot;function&quot;: { &quot;name&quot;: &quot;get_weather&quot;, &quot;arguments&quot;: &quot;{\&quot;city\&quot;:\&quot;深圳\&quot;}&quot; } } ] },
+    { &quot;role&quot;: &quot;tool&quot;, &quot;tool_call_id&quot;: &quot;call_1&quot;, &quot;content&quot;: &quot;{\&quot;temp\&quot;:31}&quot; }
+  ],
+  &quot;tools&quot;: [ { &quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {
+      &quot;name&quot;: &quot;get_weather&quot;,
+      &quot;description&quot;: &quot;查天气&quot;,
+      &quot;parameters&quot;: { &quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: { &quot;city&quot;: { &quot;type&quot;: &quot;string&quot; } },
+                      &quot;required&quot;: [&quot;city&quot;] } } } ],
+  &quot;stream&quot;: true,
+  &quot;stream_options&quot;: { &quot;include_usage&quot;: true }   // ← 不带这个,流式拿不到 token 用量
+}
+</code></pre>
+<p>三个要点：</p>
+<ul>
+<li><strong>无状态</strong>。服务器不记得任何历史——每轮都把完整 messages 重发。这就是 ③ 层
+（上下文管理）存在的原因：messages 数组的大小由<strong>我们</strong>控制，压缩/裁剪是我们的自由。
+v1 做不到这点（Cursor 的 loop 管上下文），所以才有 rotation 补丁。</li>
+<li><strong>工具调用是三段式对话</strong>：assistant 说&quot;我要调 get_weather(深圳)&quot; → 我们执行 →
+以 <code>role:&quot;tool&quot;</code> 把结果塞回 messages 再问一次。<strong>所谓 agent loop，②层，
+本质就是这个 while 循环</strong>：<code>while (回复带 tool_calls) { 执行; 回填; 重发 }</code>。</li>
+<li><code>arguments</code> 是 <strong>JSON 字符串</strong>，不是对象——模型输出的文本恰好是 JSON，需要我们 parse
+（可能是坏的！parse 失败要回给模型让它重试——这是 ② 层的错误处理职责）。</li>
+</ul>
+<h2>2. 回复（流式）：SSE 的解剖</h2>
+<p>HTTP 响应头 <code>Content-Type: text/event-stream</code>，body 是一串<strong>帧</strong>，帧之间空行分隔：</p>
+<pre><code>data: {&quot;choices&quot;:[{&quot;index&quot;:0,&quot;delta&quot;:{&quot;role&quot;:&quot;assistant&quot;,&quot;content&quot;:&quot;&quot;}}]}
+
+data: {&quot;choices&quot;:[{&quot;index&quot;:0,&quot;delta&quot;:{&quot;content&quot;:&quot;深&quot;}}]}
+
+data: {&quot;choices&quot;:[{&quot;index&quot;:0,&quot;delta&quot;:{&quot;content&quot;:&quot;圳今天&quot;}}]}
+
+data: {&quot;choices&quot;:[{&quot;index&quot;:0,&quot;delta&quot;:{&quot;content&quot;:&quot;31 度&quot;}},&quot;finish_reason&quot;:null]}
+
+data: {&quot;choices&quot;:[{&quot;index&quot;:0,&quot;delta&quot;:{},&quot;finish_reason&quot;:&quot;stop&quot;}]}
+
+data: {&quot;choices&quot;:[],&quot;usage&quot;:{&quot;prompt_tokens&quot;:812,&quot;completion_tokens&quot;:9,&quot;total_tokens&quot;:821}}
+
+data: [DONE]
+</code></pre>
+<p>规则：</p>
+<ul>
+<li>每帧 = <code>data: </code> 前缀 + 一行 JSON + 空行。终止哨兵是字面量 <code>data: [DONE]</code>（不是 JSON！）。</li>
+<li><code>delta</code> 是<strong>增量</strong>：把所有帧的 <code>delta.content</code> 依序拼接 = 完整回复。</li>
+<li><code>finish_reason</code> 出现在最后一个内容帧：<code>stop</code>（正常）/ <code>tool_calls</code>（要调工具）/
+<code>length</code>（撞 max_tokens——② 层必须把它当异常处理，不能当正常结束）。</li>
+<li>usage 只在倒数第二帧（<code>stream_options</code> 换来的），<code>choices</code> 为空数组。</li>
+<li>服务器可能穿插<strong>注释行</strong>（<code>: keep-alive</code> 之类，冒号开头）——必须跳过，v1 时代
+很多客户端栽在这。</li>
+</ul>
+<h2>3. 最阴的部分：tool_calls 的增量拼装</h2>
+<p>模型决定调工具时，<code>delta</code> 里不是 content，是 <strong>tool_calls 碎片</strong>：</p>
+<pre><code>data: {&quot;choices&quot;:[{&quot;delta&quot;:{&quot;tool_calls&quot;:[{&quot;index&quot;:0,&quot;id&quot;:&quot;call_1&quot;,&quot;type&quot;:&quot;function&quot;,
+        &quot;function&quot;:{&quot;name&quot;:&quot;get_weather&quot;,&quot;arguments&quot;:&quot;&quot;}}]}}]}
+
+data: {&quot;choices&quot;:[{&quot;delta&quot;:{&quot;tool_calls&quot;:[{&quot;index&quot;:0,&quot;function&quot;:{&quot;arguments&quot;:&quot;{\&quot;ci&quot;}}]}}]}
+
+data: {&quot;choices&quot;:[{&quot;delta&quot;:{&quot;tool_calls&quot;:[{&quot;index&quot;:0,&quot;function&quot;:{&quot;arguments&quot;:&quot;ty\&quot;:\&quot;深圳\&quot;}&quot;}}]}}]}
+
+data: {&quot;choices&quot;:[{&quot;delta&quot;:{},&quot;finish_reason&quot;:&quot;tool_calls&quot;}]}
+</code></pre>
+<p>拼装规则（这就是 ① 层的核心算法）：</p>
+<ul>
+<li><strong><code>index</code> 是聚合键</strong>。首帧带 <code>id</code>/<code>name</code>，后续帧只带 <code>arguments</code> 碎片；
+按 index 分桶，<code>arguments</code> 字符串<strong>依序拼接</strong>，直到 finish_reason 出现才完整。</li>
+<li><strong>并行工具调用会交错</strong>：index 0 和 index 1 的碎片可能穿插到达，绝不能假设串行。</li>
+<li><strong>中途不可 parse</strong>：<code>{&quot;ci</code> 不是合法 JSON——arguments 只有拼完才能 parse。
+所以 ① 对外<strong>不应该</strong>吐&quot;碎片&quot;，应该等一个 tool_call 拼完整后吐一个完整事件。</li>
+</ul>
+<h2>4. 两个传输层暗坑（真机 fixture 要覆盖的）</h2>
+<ol>
+<li><strong>UTF-8 多字节字符会被网络分块切开</strong>。&quot;圳&quot;是 3 个字节，TCP 分块可能把它切在
+中间——如果按 chunk 直接 <code>toString()</code> 会得到乱码。正确做法：先按<strong>字节</strong>攒缓冲、
+按 <code>\n\n</code> 找帧边界，再对完整帧做 UTF-8 解码（或用 <code>TextDecoder{stream:true}</code>）。</li>
+<li><strong>一个 chunk ≠ 一帧</strong>。可能半帧（要缓冲）也可能多帧（要循环切分）。
+解析器必须是&quot;喂字节、吐帧&quot;的增量状态机，不能假设 chunk 边界和帧边界对齐。</li>
+</ol>
+<h2>5. 从这一切推导 ① 的接口（下一步我们一起写的东西）</h2>
+<p>① 层的职责现在清楚了：<strong>把线上的碎片组装成语义事件</strong>。loop（②）不该知道 SSE、
+delta、index 这些词——它只想听到：</p>
+<pre><code class="language-ts">// packages/protocol 里将要定义的形状（草案，走读时一起敲定）
+complete(req: CompletionRequest): AsyncIterable&lt;CompletionEvent&gt;
+
+type CompletionEvent =
+  | { type: &quot;text_delta&quot;;      text: string }     // 拼好的增量文本(转发给飞书流式卡)
+  | { type: &quot;reasoning_delta&quot;; text: string }     // 思考流(见 §7 真机发现,不入正文)
+  | { type: &quot;tool_call&quot;;  id: string; name: string; args: unknown }  // 拼完整才吐
+  | { type: &quot;finish&quot;;     reason: &quot;stop&quot; | &quot;tool_calls&quot; | &quot;length&quot; }
+  | { type: &quot;usage&quot;;      input: number; output: number }
+</code></pre>
+<p>这个接口就是 D2 说的&quot;窄接口&quot;：手写实现和 AI SDK 实现都能藏在它后面（双向门）。</p>
+<h2>6. Fixture 纪律（写实现前先做）</h2>
+<blockquote>
+<p>fixture = 测试用的固定样本数据。此处特指：真机采集的原始 SSE 字节流文件，测试对着它回放。</p>
+</blockquote>
+<p>v1 的两次同型事故（post 解析、card operator）教训：<strong>fixture 必须抄真机 payload</strong>。
+所以第一个动作不是写解析器，是 <code>curl -N</code> 打真实 DeepSeek 拿一份原始 SSE 字节流存进
+<code>packages/protocol/fixtures/</code>（含：纯文本回复、单工具调用、<strong>并行双工具调用</strong>、
+长回复带多字节中文），解析器对着真尸体写。</p>
+<h2>7. 真机来信（2026-07-19 首次采集就学到的，课件初稿里没有）</h2>
+<p>对着 fixture 验证十分钟，真机教了三件事——<strong>这就是 fixture 纪律存在的意义</strong>：</p>
+<ol>
+<li><strong><code>delta.reasoning_content</code> 存在</strong>。deepseek-v4-flash 回答前先流式吐思考
+（plain.sse 里 110 字推理、36 字正文）。它<strong>不能</strong>拼进 assistant 正文（下一轮
+messages 不含它），但对调试/审计有价值 → 独立成 <code>reasoning_delta</code> 事件（§5 已更新）。
+这也是课后思考 Q2 的现实版：没见过的字段真的会出现。</li>
+<li><strong>工具调用前模型会先说话</strong>。toolcall.sse 里先流 19 字正文（&quot;我来帮你查…&quot;）再流
+tool_calls 碎片——content 和 tool_calls <strong>混在同一个回复里</strong>，解析器不能假设二选一。</li>
+<li><strong>并行调用实测是顺序块，不是交错</strong>。parallel.sse 的 index 序列是 0×10 后接 1×10。
+按 index 分桶的算法照写（防御其他实现/未来变化），但真机行为记录在案；
+交错场景补一个<strong>标注为合成</strong>的 fixture 覆盖。</li>
+</ol>
+<h2>课后思考（走读时聊）</h2>
+<ol>
+<li><code>finish_reason: &quot;length&quot;</code> 时 arguments 可能是半截 JSON——② 层该怎么办？</li>
+<li>如果 DeepSeek 某天在 delta 里加了新字段，我们的解析器该崩还是该忽略？（宽进严出）</li>
+<li>为什么 usage 事件值得单独存在，而不是塞进 finish 事件里？（提示：M2 的 audit.log）</li>
+</ol>
+
+</article></main>
+<script>
+(function(){var r=document.documentElement,k="loom-theme",s=null;
+try{s=localStorage.getItem(k)}catch(e){}if(s)r.setAttribute("data-theme",s);
+document.getElementById("t").addEventListener("click",function(){
+var c=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+var n=c==="dark"?"light":"dark";r.setAttribute("data-theme",n);
+try{localStorage.setItem(k,n)}catch(e){}});})();
+</script>
+</body>
+</html>

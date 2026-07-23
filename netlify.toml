@@ -1,0 +1,6 @@
+# loom 门户 —— 纯静态托管 docs/ 目录。
+# 门户与文档 html/svg 已预生成并提交,Netlify 无需构建。
+# (改了 docs 下的 .md 后,本地 `node scripts/build-docs.mjs` 重新生成 html 再提交。)
+[build]
+  publish = "docs"
+  command = ""
