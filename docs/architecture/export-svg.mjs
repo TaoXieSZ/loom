@@ -27,6 +27,13 @@ if (!svgMatch) throw new Error("no <svg> block found in " + inPath);
 let svg = svgMatch[0];
 
 /**
+ * archify 2.12 起会在节点上输出 HTML 式无值属性（如 `data-detail-anchor`）。
+ * HTML 合法但 SVG 是 XML——无值属性会让 GitHub/qlmanage 的严格解析器整图报错。
+ * 这里统一补成空值属性（`data-foo=""`）；带 `=` 的正常属性不受影响。
+ */
+svg = svg.replace(/ (data-[a-z-]+)(?=[ >])/g, ' $1=""');
+
+/**
  * 合并所有 <style> 块，并**剥掉注释**。
  *
  * 为什么必须剥：下面用文本切分求 selector，会把规则前面的注释横幅一并算进 selector

@@ -1,6 +1,6 @@
 # agent-farm v2 蓝图 — own-the-loop 重建宪章
 
-Status: **已定稿 —— M1 进行中**
+Status: **已定稿 —— M1 ✅ M2 ✅（2026-07-29 真机验证）→ 当前 M3**
 Date: 2026-07-17｜方法：逐分支拍板，每个决策先讲透 tradeoff 再定
 
 ## 0. 一句话
@@ -51,8 +51,24 @@ v2 买到的结构性简化：**rotation/memory_key 整体蒸发**（自有③=�
     DeepSeek 全链路打通。**剩 host 进程壳**——它把这套通过 HTTP/SSE 暴露给 dispatch，
     是"能跑脚本"变成"飞书消息真机可见"的最后一步。组件进度见
     `docs/architecture/v2-progress.svg`。
+  - _进度（2026-07-29）_：**M1 达成**。dispatch 新 engine 类型 `loom`（`loom-client.ts`，
+    `IAgentHostClient` 实现：POST /run 消费 SSE、sessionId 透传、busy/cancel 映射）+
+    飞书流式卡接线（`partialAnswerCard` 经 ProgressHub，1.5s 一档增量刷新）。
+    真机全链路：owner 飞书 DM → dispatch(feishu-dm `/to loom-test`) → loom-host → DeepSeek →
+    流式卡（trace 佐证：dispatch_progress 每 ~800ms 累计字符 2→115→199→282→370→462，
+    5.7s 跑完，reply_delivered）。
+    **运维教训**：同一飞书 app 多个 WS 消费者会被平台分片（Mac2 生产 dispatch 存活时
+    消息随机分流两端，本机收不到的事件被旧配置拒绝）——本机测试期间需停 Mac2 dispatch
+    或用独立测试 app。
 - **M2 状态**：agent home 落盘、sessions.jsonl、两级记忆+memory_search+蒸馏 cron。
   验收：重启后记忆/会话连续，检索命中真实历史。
+  - _进度（2026-07-27）_：`agents/<id>/` 聚合根 + sessions/*.jsonl 续接 + 两级记忆
+    （core.md 常驻 + facts/episodes FTS5 检回，trigram 短词 LIKE 回退、OR 按命中词数排序）
+    + memory_search 工具 + 蒸馏入口（`scripts/distill.mjs`）已建成，**58 测试绿**（+20）；
+    第二课 [`lessons/02-agent-home.md`](lessons/02-agent-home.md)。
+    **真机验收全绿**（`scripts/smoke-home.mjs`）：session 落盘 → 蒸馏出 facts →
+    派生全新进程换 session 提问，只能靠 memory_search 检回并答对"深烘咖啡"——
+    重启后记忆/会话连续，检索命中真实历史。（教训：多词 AND 检索太脆，改 OR 排序。）
 - **M3 边界**：工具注册表、grants 构造式门控、approval 原语（飞书卡）、shell 工具、MCP 客户端。
   验收：未授权工具模型不可见；高危动作真机弹卡、owner-only。
 - **M4 绞杀**：现有辅助 agent 逐个割接到 v2（先低风险的临时 agent，再有状态的）。

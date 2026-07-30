@@ -29,10 +29,10 @@
 | **② loop** agent 循环 + 构造式边界 + 审批原语 | ✅ 已建成，真机验证（[PR #2](https://github.com/TaoXieSZ/loom/pull/2)） |
 | **host** 进程壳:HTTP/SSE | ✅ 已建成，真机验证 |
 | **grants** 构造式门控逻辑已在 ② 实现；飞书审批卡渲染待接 | ◐ 逻辑已在 ② 实现；飞书审批卡待接（M3） |
-| **agent home** 文件优先聚合根 + 两级记忆（core.md + FTS）落盘 | ⬜ 待建 · M2 |
+| **agent home** 文件优先聚合根 + 两级记忆（core.md + FTS）+ memory_search + 蒸馏入口，真机验证 | ✅ 已建成 |
 | **dispatch** 外壳移植（飞书层 / 审批流）+ 绞杀迁移 | ⬜ 待建 · M4–M5 |
 
-DeepSeek v4-flash 全链路已打通，**38 测试绿**（14 protocol + 16 loop + 8 host）。
+DeepSeek v4-flash 全链路已打通，**58 测试绿**（14 protocol + 16 loop + 28 host）。
 <!-- SYNC:PROGRESS:END -->
 
 > 进度由 `scripts/sync-portal.mjs` 从测试与实现事实自动同步，非手工维护。
@@ -42,7 +42,7 @@ DeepSeek v4-flash 全链路已打通，**38 测试绿**（14 protocol + 16 loop 
 ```
 packages/protocol   ✅ 类型契约 + SSE 解析 + transport（dispatch↔loom-host 协议唯一真相）
 packages/loop       ✅ agent loop（工具循环 / 构造式能力边界 / 审批原语），纯逻辑可单测
-packages/host       ⬜ 进程壳（HTTP/SSE 服务、agent home 落盘、pm2 托管）— 未实现
+packages/host       ✅ 进程壳（HTTP/SSE）+ agent home 落盘（两级记忆/memory_search/蒸馏，M2 真机验证）— pm2 托管待部署
 ```
 
 ## 命令
