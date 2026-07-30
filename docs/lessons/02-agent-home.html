@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第二课 — agent home 状态层 · loom</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon-32.png" sizes="32x32" type="image/png">
+<meta name="theme-color" content="#cc785c">
+<style>
+  :root{
+    --bg:#faf9f5;--surface:#f3f1ea;--ink:#1a1915;--muted:#6b6558;--faint:#9a9384;
+    --line:#e2dfd4;--line-firm:#d0ccbe;--accent:#cc785c;--accent-ink:#a8502f;
+    --serif:ui-serif,Georgia,"Songti SC","Noto Serif SC",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,"Noto Sans Mono CJK SC",monospace;
+  }
+  @media(prefers-color-scheme:dark){:root{
+    --bg:#1f1e1b;--surface:#292722;--ink:#f0eee6;--muted:#a8a090;--faint:#756f62;
+    --line:#34322c;--line-firm:#423f37;--accent:#e0997c;--accent-ink:#eab59f;}}
+  :root[data-theme="light"]{--bg:#faf9f5;--surface:#f3f1ea;--ink:#1a1915;--muted:#6b6558;--faint:#9a9384;--line:#e2dfd4;--line-firm:#d0ccbe;--accent:#cc785c;--accent-ink:#a8502f;}
+  :root[data-theme="dark"]{--bg:#1f1e1b;--surface:#292722;--ink:#f0eee6;--muted:#a8a090;--faint:#756f62;--line:#34322c;--line-firm:#423f37;--accent:#e0997c;--accent-ink:#eab59f;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:16px;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:0 28px}
+  header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;
+    background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px)}
+  .bar{display:flex;align-items:center;gap:14px;padding:14px 0}
+  .bar a.back{color:var(--muted);text-decoration:none;font-size:13.5px;font-family:var(--mono)}
+  .bar a.back:hover{color:var(--accent-ink)}
+  .bar .sp{margin-left:auto}
+  .toggle{font-family:var(--mono);font-size:12px;color:var(--muted);background:transparent;
+    border:1px solid var(--line-firm);border-radius:2px;padding:4px 9px;cursor:pointer}
+  .toggle:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  main{padding:48px 0 80px}
+  .prose h1{font-family:var(--serif);font-weight:500;font-size:clamp(30px,5vw,42px);
+    line-height:1.15;letter-spacing:-.01em;margin:0 0 28px;text-wrap:balance}
+  .prose h2{font-family:var(--serif);font-weight:500;font-size:25px;margin:44px 0 16px;
+    padding-top:20px;border-top:1px solid var(--line);letter-spacing:-.005em}
+  .prose h3{font-family:var(--serif);font-weight:600;font-size:19px;margin:32px 0 12px}
+  .prose p{margin:0 0 18px}
+  .prose ul,.prose ol{margin:0 0 18px;padding-left:24px}
+  .prose li{margin:6px 0}
+  .prose a{color:var(--accent-ink);text-decoration:none;border-bottom:1px solid var(--line-firm)}
+  .prose a:hover{border-color:var(--accent)}
+  .prose strong{font-weight:600;color:var(--ink)}
+  .prose em{font-family:var(--serif);font-style:italic}
+  .prose code{font-family:var(--mono);font-size:.88em;background:var(--surface);
+    border:1px solid var(--line);border-radius:3px;padding:1px 5px}
+  .prose pre{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+    padding:16px 18px;overflow-x:auto;margin:0 0 20px;line-height:1.55}
+  .prose pre code{background:none;border:0;padding:0;font-size:13px}
+  .prose blockquote{margin:0 0 20px;padding:2px 18px;border-left:3px solid var(--accent);
+    color:var(--muted);background:var(--surface)}
+  .prose blockquote p{margin:12px 0}
+  .prose table{border-collapse:collapse;width:100%;margin:0 0 22px;font-size:14px;display:block;overflow-x:auto}
+  .prose th,.prose td{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top}
+  .prose th{background:var(--surface);font-weight:600;font-family:var(--mono);font-size:12.5px}
+  .prose hr{border:0;border-top:1px solid var(--line);margin:32px 0}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap bar">
+  <a class="back" href="../index.html">← 门户</a>
+  <span class="sp"></span>
+  <button class="toggle" id="t" aria-label="切换主题">主题</button>
+</div></header>
+<main class="wrap"><article class="prose">
+<h1>第二课：agent home —— 状态到底该住在哪里</h1>
+<blockquote>
+<p>loom 教学系列。读完这课，你能说清为什么 agent 的状态要聚合成一个目录、
+为什么索引只是&quot;派生物&quot;，以及两级记忆和蒸馏是怎么配合的。写 M2 代码之前先过这一课。</p>
+</blockquote>
+<h2>1. 问题：状态三家分管是 v1 的病灶</h2>
+<p>v1 里一个 agent 的状态散在三处：配置在 dispatch 的数据库里，记忆在一个独立服务里，
+会话历史又贴在 loop 的运行时里。后果我们都尝过——改一处要对三处账，重启丢一半，
+&quot;这个 agent 到底是谁&quot;没有单一答案。</p>
+<p>v2 的答案（蓝图 D3）朴素到近乎无趣：<strong>一个 agent = 一个目录</strong>。</p>
+<pre><code>agents/&lt;id&gt;/
+├ agent.json      身份+配置+grants（能力边界也住这里）
+├ memory/
+│  ├ core.md      常驻记忆（每次请求都进 system prompt）
+│  ├ facts/       一事一文件的长期事实（靠检索取回）
+│  ├ episodes/    按天的经历摘要（蒸馏产物）
+│  └ index.sqlite † 检索索引——† = 派生物，删了能重建
+├ sessions/*.jsonl  会话历史（一行一条消息）
+└ audit.log         审批/工具执行的流水账
+</code></pre>
+<p>这个目录就是<strong>聚合根</strong>：要备份一个 agent，<code>tar</code> 这个目录；要删掉一个 agent，
+<code>rm -rf</code> 这个目录；要迁移到另一台机器，整个目录搬过去就完事。
+没有第二个需要同步的地方。</p>
+<h2>2. 文件优先，索引皆派生物</h2>
+<p>为什么用普通文件（md、jsonl）而不是数据库当<strong>真相</strong>？三个理由：</p>
+<ul>
+<li><strong>人可读可改</strong>。core.md 你想改就用编辑器改，不用写 SQL、不用等管理界面。
+教学项目尤其如此——状态必须能 <code>cat</code> 出来看。</li>
+<li><strong>工具链免费</strong>。git 可以版本化它，grep 可以搜它，rsync 可以搬它。</li>
+<li><strong>崩溃半写损失小</strong>。jsonl 是 append-only：断电最多坏最后一行，
+加载时跳过坏行就是（我们的 <code>loadSession</code> 正是这么做的）。</li>
+</ul>
+<p>但文件有个短板：<strong>检索慢</strong>。所以才有了 <code>index.sqlite</code>——它是 FTS5 全文索引，
+专门服务 memory_search。关键的心智模型是：</p>
+<blockquote>
+<p><strong>索引是派生物，不是真相。</strong> 真相在 md 文件里；sqlite 删了，
+扫描一遍 facts/ + episodes/ 就能原样重建。所以过期检测可以很粗暴：
+任一源文件的 mtime 比索引新 → 整个重建。几秒的事，不值得做增量同步
+那套一致性机制。</p>
+</blockquote>
+<p>这个&quot;真相唯一、索引可再生&quot;的分工，让 M2 完全不用处理双写一致性问题——
+写路径只碰文件，索引永远跟在后面追。</p>
+<h2>3. 两级记忆：常驻 vs 检回</h2>
+<p>人记东西也分两档：张口就来的，和&quot;我记得我记过、得翻翻&quot;的。agent 一样：</p>
+<ul>
+<li><strong>core.md —— 常驻</strong>。每次请求都拼进 system prompt。它是 agent 的&quot;自我&quot;：
+我是谁、主人是谁、雷区是什么。因为它进每一次请求，<strong>必须严格小</strong>
+（我们硬截断到 2000 字）——core.md 每胖一个字，每一次调用的成本都跟着涨。</li>
+<li><strong>facts/ + episodes/ —— 检回</strong>。量大，不可能全塞进上下文；平时躺在磁盘上，
+模型觉得需要时调 <code>memory_search</code> 工具查回来。</li>
+</ul>
+<p>注意 core.md <strong>不进索引</strong>：它已经常驻了，再索引它只会污染搜索结果
+（每次搜索都命中常驻内容，等于没搜）。索引只覆盖&quot;不在上下文里的那部分&quot;。</p>
+<p><code>memory_search</code> 是个只读工具，风险天然低，所以它声明 <code>defaultMode: &quot;always&quot;</code>——
+不打扰人。这呼应 types.ts 里的设计：风险知识属于工具，策略属于 agent 配置。</p>
+<h2>4. FTS5 trigram 与 CJK 的 ≥3 字符坑</h2>
+<p>SQLite 的 FTS5 自带 trigram 分词器：把文本切成连续 3 字符的滑窗
+（&quot;我喜欢深烘&quot; → 我喜欢 / 喜欢深 / 欢深烘）。这对中文是救星——
+FTS5 默认分词器按空格切，整段中文是一个&quot;词&quot;，根本没法检索；
+trigram 不看空格，中日韩文本天然可搜。</p>
+<p>但有个实测踩出来的坑（真机来信级别，写进代码注释了）：</p>
+<blockquote>
+<p><strong>trigram 要求查询词 ≥ 3 个字符。</strong>&quot;深烘咖啡&quot;能 MATCH 到，&quot;深烘&quot;不能——
+两个字符连一个完整 trigram 都构不成，MATCH 静默返回空。</p>
+</blockquote>
+<p>所以 memory-index 的查询策略是双通道 + 逐词独立：</p>
+<pre><code>查询按空白切词，逐词独立查
+  ├ 词 ≥3 字符 → FTS5 MATCH（限定 title/body 两列）
+  └ 词 &lt;3 字符 → 回退 LIKE %词%（慢，但正确性优先）
+结果按&quot;命中了几个词&quot;降序 —— OR 语义，不是 AND
+</code></pre>
+<p>两个坑都是真机教出来的：</p>
+<ul>
+<li>**AND 太脆。**第一版是多词 AND：模型的查询是自然语言&quot;咖啡 偏好 喜欢&quot;，
+只要&quot;喜欢&quot;不在正文就整体 miss——真机 smoke 里模型明明调了 memory_search，
+却回答&quot;没有相关记忆&quot;。搜索引擎的常识是 OR + 按命中词数排序，不是 AND。</li>
+<li>**FTS 默认索引所有列。**kind/path 也在表里，不框 <code>{title body} :</code> 的话，
+查 &quot;fact&quot; 会命中每一条 fact。</li>
+</ul>
+<p>短词查询失去了索引加速（全表扫），但对记忆库这种 KB~MB 级的数据量，
+LIKE 的代价可以忽略。<strong>正确性优先，性能够用就行。</strong></p>
+<h2>5. 蒸馏：压缩内化，不是归档</h2>
+<p>sessions/<em>.jsonl 会无限长大，但它*<em>不进上下文</em></em>——历史只按 session 加载，
+跨 session 的&quot;我从经历里学到什么&quot;靠蒸馏（蓝图 D4）：</p>
+<pre><code>cron 定时跑 scripts/distill.mjs
+  ├ 读每个 session 的增量行（watermark 记在 memory/distill-state.json）
+  ├ 把增量交给模型：&quot;压缩成一段当日 episode + 若干条原子事实&quot;
+  ├ 模型吐 JSON → 写 episodes/YYYY-MM-DD.md + facts/&lt;slug&gt;.md
+  ├ 重建索引（新记忆立刻可搜）
+  └ 推进 watermark（下次只处理新增量）
+</code></pre>
+<p>为什么叫&quot;内化&quot;而不叫&quot;归档&quot;：归档是把原文挪个地方，检索时还得读原文；
+蒸馏是让模型<strong>把经历改写成人格知识</strong>——&quot;7 月 26 日主人让我查深烘咖啡的牌子&quot;
+变成 fact：&quot;主人喜欢深烘咖啡&quot;。下次对话检索回来的是结论，不是流水账。
+v1 的 rotation/memory_key 补丁想解决的正是这个问题，但它在别人的 loop 里
+无从下手；自有 loop 里，它就是几十行代码加一个 cron。</p>
+<p>watermark 的设计同样体现&quot;派生物&quot;哲学：distill-state.json 丢了，
+大不了把全部历史重新蒸馏一遍——结果等价，只是多花时间。<strong>没有任何状态是
+丢了就出事的。</strong></p>
+<h2>6. 会话落盘：system 不落，断点如实</h2>
+<p><code>sessions/&lt;sid&gt;.jsonl</code> 每行一条消息：<code>{&quot;ts&quot;:..., ...Message}</code>。两条纪律：</p>
+<ol>
+<li><strong>system 消息不落盘</strong>。system prompt = agent.json 的 systemPrompt + core.md
+现拼——它本质上是&quot;配置的投影&quot;，落盘会产生第二份真相（改了 core.md，
+旧 session 里的 system 还是老的，对账地狱）。加载时现拼，永远新鲜。</li>
+<li><strong>中断/异常也如实落已有部分</strong>。turn 跑到一半用户断开，
+已经产生的 assistant/tool 消息照落。jsonl append-only 让&quot;落一半&quot;
+是正常状态而不是损坏——下次加载从断点继续就是。</li>
+</ol>
+<p>实现上有个顺水推舟的点：<code>runTurn</code> 本来就<strong>就地追加</strong> messages 数组
+（② 层注释里写明这是为了调用方可以直接存盘）。host 只要在 turn 前记下
+数组长度，turn 后把新增段切片 append 进 jsonl，一行多余的状态都不用管。</p>
+<h2>课后思考（走读时聊）</h2>
+<ol>
+<li>core.md 的 2000 字硬截断是&quot;保守优先&quot;。有没有更聪明的方案？代价是什么？</li>
+<li>蒸馏的模型输出 JSON 解析失败时，watermark 该不该推进？（提示：毒数据 vs 丢数据）</li>
+<li>audit.log 和 sessions/*.jsonl 都记了工具执行，分工是什么？重复有价值吗？</li>
+</ol>
+
+</article></main>
+<script>
+(function(){var r=document.documentElement,k="loom-theme",s=null;
+try{s=localStorage.getItem(k)}catch(e){}if(s)r.setAttribute("data-theme",s);
+document.getElementById("t").addEventListener("click",function(){
+var c=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+var n=c==="dark"?"light":"dark";r.setAttribute("data-theme",n);
+try{localStorage.setItem(k,n)}catch(e){}});})();
+</script>
+</body>
+</html>

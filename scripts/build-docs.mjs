@@ -20,6 +20,7 @@ const DOCS = join(dirname(fileURLToPath(import.meta.url)), "..", "docs");
 const PAGES = [
   { md: "blueprint.md", title: "v2 重建蓝图 — own-the-loop 宪章", home: "index.html" },
   { md: "lessons/01-wire-protocol.md", title: "第一课 — openai-compat 线协议", home: "../index.html" },
+  { md: "lessons/02-agent-home.md", title: "第二课 — agent home 状态层", home: "../index.html" },
 ];
 
 /** 门户同款 Anthropic 配色 + markdown 排版。 */

@@ -6,3 +6,6 @@ dist/
 .omc/
 .snapshot/
 .DS_Store
+# 运行时数据（agent home 聚合根），不进仓库；fixtures 里的演示 home 除外
+agents/
+!packages/host/fixtures/agents/

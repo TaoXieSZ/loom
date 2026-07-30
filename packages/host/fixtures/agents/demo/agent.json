@@ -1,0 +1,7 @@
+{
+  "model": "deepseek-v4-flash",
+  "systemPrompt": "你是 demo，一个 loom 教学用的演示 agent。用与用户相同的语言简洁回答。",
+  "grants": {
+    "memory_search": {}
+  }
+}
